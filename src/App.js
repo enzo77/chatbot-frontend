@@ -3,6 +3,31 @@ import './App.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
 
+const IconPlus = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
+    <line x1="12" y1="4" x2="12" y2="20" /><line x1="4" y1="12" x2="20" y2="12" />
+  </svg>
+);
+
+const IconMsg = () => (
+  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+  </svg>
+);
+
+const IconSend = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13" />
+    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+  </svg>
+);
+
+const IconSpinner = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+  </svg>
+);
+
 function App() {
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
@@ -11,7 +36,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Scroll automático al último mensaje
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -30,7 +54,6 @@ function App() {
     }
   }, []);
 
-  // Cargar conversaciones al iniciar
   useEffect(() => {
     cargarConversaciones();
   }, [cargarConversaciones]);
@@ -66,14 +89,9 @@ function App() {
       const res = await fetch(`${API_URL}/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          message: userMessage,
-          conversation_id: currentConversationId
-        })
+        body: JSON.stringify({ message: userMessage, conversation_id: currentConversationId })
       });
-
       const data = await res.json();
-      
       if (data.response) {
         setMessages(prev => [...prev, { role: 'assistant', content: data.response, timestamp: new Date().toISOString() }]);
         cargarConversaciones();
@@ -102,10 +120,20 @@ function App() {
 
   return (
     <div className="app">
+
+      {/* ── SIDEBAR ── */}
       <div className="sidebar">
+        <div className="sidebar-header">
+          <img src="/logo192.png" alt="Logo" className="sidebar-logo" />
+          <span className="sidebar-brand">NA IA ASISTETNTE</span>
+        </div>
+
         <button className="new-chat-btn" onClick={crearNuevaConversacion}>
-          ➕ Nueva conversación
+          <IconPlus /> Nueva conversación
         </button>
+
+        <div className="conversations-label">Historial</div>
+
         <div className="conversations-list">
           {conversations.map(conv => (
             <div
@@ -113,54 +141,85 @@ function App() {
               className={`conversation-item ${currentConversationId === conv.id ? 'active' : ''}`}
               onClick={() => cargarConversacion(conv.id)}
             >
+              <span className="conv-icon"><IconMsg /></span>
               <div className="conv-preview">{conv.preview}</div>
               <button
                 className="delete-btn"
                 onClick={(e) => eliminarConversacion(conv.id, e)}
+                title="Eliminar"
               >
-                🗑️
+                ✕
               </button>
             </div>
           ))}
         </div>
       </div>
 
+      {/* ── CHAT ── */}
       <div className="chat-container">
         {!currentConversationId ? (
+
           <div className="empty-state">
-            <h2>Bienvenido al Chatbot</h2>
-            <p>Crea una nueva conversación para comenzar</p>
+            <img src="/logo192.png" alt="Logo" className="empty-logo" />
+            <h2>Bienvenido al ChANtbot</h2>
+            {/* <p>Tu PADRINO asistente artificial</p> */}
+            <div className="empty-hint">
+              <IconPlus /> Crea una nueva conversación con el Padrino para empezar
+            </div>
           </div>
+
         ) : (
           <>
+            <div className="chat-topbar">
+              <span className="topbar-dot" />
+              <span className="topbar-label">IA · en línea</span>
+            </div>
+
             <div className="messages">
               {messages.map((msg, idx) => (
                 <div key={idx} className={`message ${msg.role}`}>
                   <div className="message-content">{msg.content}</div>
                   <div className="message-time">
-                    {new Date(msg.timestamp).toLocaleTimeString()}
+                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
               ))}
-              {loading && <div className="message assistant loading">Escribiendo...</div>}
+
+              {loading && (
+                <div className="message assistant loading">
+                  <div className="message-content">
+                    <span className="dot" />
+                    <span className="dot" />
+                    <span className="dot" />
+                  </div>
+                </div>
+              )}
               <div ref={messagesEndRef} />
             </div>
 
-            <form className="input-form" onSubmit={enviarMensaje}>
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Escribe tu pregunta..."
-                disabled={loading}
-              />
-              <button type="submit" disabled={loading}>
-                {loading ? '⏳' : '📤'}
-              </button>
-            </form>
+            <div className="input-area">
+              <form className="input-form" onSubmit={enviarMensaje}>
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="Escribe tu mensaje..."
+                  disabled={loading}
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className={`send-btn${loading ? ' spinning' : ''}`}
+                  disabled={loading || !input.trim()}
+                >
+                  {loading ? <IconSpinner /> : <IconSend />}
+                </button>
+              </form>
+            </div>
           </>
         )}
       </div>
+
     </div>
   );
 }
