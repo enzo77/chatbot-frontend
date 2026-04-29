@@ -28,12 +28,21 @@ const IconSpinner = () => (
   </svg>
 );
 
+const IconMenu = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <line x1="3" y1="6"  x2="21" y2="6"  />
+    <line x1="3" y1="12" x2="21" y2="12" />
+    <line x1="3" y1="18" x2="21" y2="18" />
+  </svg>
+);
+
 function App() {
   const [conversations, setConversations] = useState([]);
   const [currentConversationId, setCurrentConversationId] = useState(null);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -63,6 +72,7 @@ function App() {
     setCurrentConversationId(newId);
     setMessages([]);
     setInput('');
+    setSidebarOpen(false);
   };
 
   const cargarConversacion = async (conversationId) => {
@@ -71,6 +81,7 @@ function App() {
       const data = await res.json();
       setCurrentConversationId(conversationId);
       setMessages(data.messages);
+      setSidebarOpen(false);
     } catch (error) {
       console.error('Error cargando conversación:', error);
     }
@@ -121,8 +132,13 @@ function App() {
   return (
     <div className="app">
 
+      {/* Overlay (mobile) */}
+      {sidebarOpen && (
+        <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+      )}
+
       {/* ── SIDEBAR ── */}
-      <div className="sidebar">
+      <div className={`sidebar${sidebarOpen ? ' open' : ''}`}>
         <div className="sidebar-header">
           <img src="/logo192.png" alt="Logo" className="sidebar-logo" />
           <span className="sidebar-brand">NA IA ASISTETNTE</span>
@@ -158,19 +174,28 @@ function App() {
       {/* ── CHAT ── */}
       <div className="chat-container">
         {!currentConversationId ? (
-
-          <div className="empty-state">
-            <img src="/logo192.png" alt="Logo" className="empty-logo" />
-            <h2>Bienvenido al ChANtbot</h2>
-            {/* <p>Tu PADRINO asistente artificial</p> */}
-            <div className="empty-hint">
-              <IconPlus /> Crea una nueva conversación con el Padrino para empezar
+          <>
+            <div className="mobile-topbar">
+              <button className="topbar-menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Abrir menú">
+                <IconMenu />
+              </button>
             </div>
-          </div>
 
+            <div className="empty-state">
+              <img src="/logo192.png" alt="Logo" className="empty-logo" />
+              <h2>Bienvenido al ChANtbot</h2>
+              {/* <p>Tu PADRINO asistente artificial</p> */}
+              <button className="empty-hint" onClick={crearNuevaConversacion}>
+                <IconPlus /> Crea una nueva conversación con el Padrino para empezar
+              </button>
+            </div>
+          </>
         ) : (
           <>
             <div className="chat-topbar">
+              <button className="topbar-menu-btn" onClick={() => setSidebarOpen(true)} aria-label="Abrir menú">
+                <IconMenu />
+              </button>
               <span className="topbar-dot" />
               <span className="topbar-label">IA · en línea</span>
             </div>

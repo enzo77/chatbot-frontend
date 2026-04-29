@@ -280,11 +280,19 @@ body {
   border: 1px solid var(--border-acc);
   border-radius: 50px;
   font-size: 11.5px;
+  font-family: 'Sora', sans-serif;
   color: var(--accent);
   font-weight: 500;
   letter-spacing: 0.02em;
+  cursor: pointer;
   animation: fade-up 0.7s 0.2s ease both;
   opacity: 0;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.empty-hint:hover {
+  background: rgba(34, 211, 238, 0.18);
+  box-shadow: 0 0 18px var(--accent-glow);
 }
 
 /* ── MESSAGES ────────────────────────────── */
@@ -445,4 +453,155 @@ body {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+/* ── MOBILE OVERLAY ──────────────────────── */
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(3px);
+  z-index: 40;
+  animation: fade-in-overlay 0.22s ease;
+}
+
+@keyframes fade-in-overlay {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── MOBILE TOPBAR (empty state) ─────────── */
+.mobile-topbar {
+  display: none;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+/* ── HAMBURGER BUTTON ────────────────────── */
+.topbar-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  color: var(--txt-2);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+
+.topbar-menu-btn:hover {
+  background: var(--bg-hover);
+  color: var(--txt-1);
+}
+
+/* ── TABLET (641px – 1024px) ─────────────── */
+@media (max-width: 1024px) and (min-width: 641px) {
+  .sidebar {
+    width: 220px;
+  }
+
+  .messages {
+    padding: 24px 32px;
+  }
+
+  .input-area {
+    padding: 12px 32px 20px;
+  }
+
+  .message {
+    max-width: 80%;
+  }
+}
+
+/* ── MOBILE (≤ 640px) ────────────────────── */
+@media (max-width: 640px) {
+  .app {
+    height: 100dvh;
+  }
+
+  /* Sidebar becomes a slide-in drawer */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: -290px;
+    bottom: 0;
+    width: 285px;
+    z-index: 50;
+    transition: left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+  }
+
+  .sidebar.open {
+    left: 0;
+    box-shadow: 6px 0 40px rgba(0, 0, 0, 0.55);
+  }
+
+  /* Show hamburger buttons */
+  .topbar-menu-btn {
+    display: flex;
+    margin-right: 6px;
+  }
+
+  /* Show mobile topbar on empty state */
+  .mobile-topbar {
+    display: flex;
+  }
+
+  /* Reduce chat topbar padding */
+  .chat-topbar {
+    padding: 10px 14px;
+  }
+
+  /* Reduce message area padding */
+  .messages {
+    padding: 16px 14px;
+    gap: 14px;
+  }
+
+  /* Wider bubbles on mobile */
+  .message {
+    max-width: 90%;
+  }
+
+  /* Tighter input area */
+  .input-area {
+    padding: 10px 12px 14px;
+  }
+
+  /* Empty state adjustments */
+  .empty-state {
+    padding: 0 20px;
+    text-align: center;
+    gap: 14px;
+  }
+
+  .empty-logo {
+    width: 68px;
+    height: 68px;
+  }
+
+  .empty-state h2 {
+    font-size: 21px;
+  }
+
+  .empty-hint {
+    font-size: 11px;
+    padding: 8px 14px;
+  }
+
+  /* Always show delete button on touch screens */
+  .delete-btn {
+    opacity: 1 !important;
+  }
+
+  /* Larger touch targets for conversation items */
+  .conversation-item {
+    padding: 11px 10px;
+  }
 }
