@@ -1,5 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './App.css';
+
+const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
 
 function App() {
   const [conversations, setConversations] = useState([]);
@@ -8,8 +10,6 @@ function App() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
-
-  const API_URL = 'http://127.0.0.1:5000/api';
 
   // Scroll automático al último mensaje
   const scrollToBottom = () => {
@@ -20,12 +20,7 @@ function App() {
     scrollToBottom();
   }, [messages]);
 
-  // Cargar conversaciones al iniciar
-  useEffect(() => {
-    cargarConversaciones();
-  }, []);
-
-  const cargarConversaciones = async () => {
+  const cargarConversaciones = useCallback(async () => {
     try {
       const res = await fetch(`${API_URL}/conversaciones`);
       const data = await res.json();
@@ -33,7 +28,12 @@ function App() {
     } catch (error) {
       console.error('Error cargando conversaciones:', error);
     }
-  };
+  }, []);
+
+  // Cargar conversaciones al iniciar
+  useEffect(() => {
+    cargarConversaciones();
+  }, [cargarConversaciones]);
 
   const crearNuevaConversacion = () => {
     const newId = `conv_${Date.now()}`;
