@@ -254,7 +254,7 @@ function App() {
 
             <div className="empty-state">
               <img src="/logo192.png" alt="Logo" className="empty-logo" />
-              <h2>ChANtbot</h2>
+              <h2>NA - IA</h2>
               <p className="empty-subtitle">Tu espacio seguro para conocer el programa de NA</p>
               <p className="empty-desc">
                 Podés preguntar sobre los 12&nbsp;pasos, las reuniones, cómo funciona el programa,
@@ -292,7 +292,7 @@ function App() {
                 <IconMenu />
               </button>
               <span className="topbar-dot" />
-              <span className="topbar-label">ChANtbot · disponible</span>
+              <span className="topbar-label">NA IA · disponible</span>
             </div>
 
             <div className="messages">
