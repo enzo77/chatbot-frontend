@@ -52,6 +52,7 @@ function App() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [serverWaking, setServerWaking] = useState(false);
   const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
@@ -67,14 +68,18 @@ function App() {
       const res = await fetch(`${API_URL}/conversaciones?user_id=${getUserId()}`);
       const data = await res.json();
       setConversations(data);
+      setServerWaking(false);
     } catch (error) {
       console.error('Error cargando conversaciones:', error);
     }
   }, []);
 
   useEffect(() => {
-    cargarConversaciones();
+    const timer = setTimeout(() => setServerWaking(true), 4000);
+    cargarConversaciones().then(() => clearTimeout(timer));
+    return () => clearTimeout(timer);
   }, [cargarConversaciones]);
+
 
   const crearNuevaConversacion = () => {
     const newId = `conv_${Date.now()}`;
@@ -202,6 +207,12 @@ function App() {
 
   return (
     <div className="app">
+
+      {serverWaking && (
+        <div className="waking-banner">
+          Despertando el servidor, espera unos segundos...
+        </div>
+      )}
 
       {/* Overlay (mobile) */}
       {sidebarOpen && (
