@@ -89,27 +89,74 @@ function App() {
 
   const enviarMensaje = async (e) => {
     e.preventDefault();
-    if (!input.trim() || !currentConversationId) return;
+    if (!input.trim() || !currentConversationId || loading) return;
 
     const userMessage = input;
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', content: userMessage, timestamp: new Date().toISOString() }]);
     setLoading(true);
 
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: userMessage, timestamp: new Date().toISOString() },
+      { role: 'assistant', content: '', timestamp: new Date().toISOString(), streaming: true }
+    ]);
+
     try {
-      const res = await fetch(`${API_URL}/chat`, {
+      const res = await fetch(`${API_URL}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMessage, conversation_id: currentConversationId })
       });
-      const data = await res.json();
-      if (data.response) {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.response, timestamp: new Date().toISOString() }]);
-        cargarConversaciones();
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop();
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const parsed = JSON.parse(line.slice(6));
+            if (parsed.content) {
+              setMessages(prev => {
+                const updated = [...prev];
+                const last = updated[updated.length - 1];
+                updated[updated.length - 1] = { ...last, content: last.content + parsed.content };
+                return updated;
+              });
+            }
+            if (parsed.done) {
+              setMessages(prev => {
+                const updated = [...prev];
+                updated[updated.length - 1] = { ...updated[updated.length - 1], streaming: false };
+                return updated;
+              });
+              cargarConversaciones();
+            }
+          } catch { /* chunk malformado */ }
+        }
       }
     } catch (error) {
       console.error('Error enviando mensaje:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Error al conectar con el servidor', timestamp: new Date().toISOString() }]);
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: 'assistant',
+          content: 'Error al conectar con el servidor',
+          timestamp: new Date().toISOString(),
+          streaming: false
+        };
+        return updated;
+      });
     } finally {
       setLoading(false);
     }
@@ -202,23 +249,28 @@ function App() {
 
             <div className="messages">
               {messages.map((msg, idx) => (
-                <div key={idx} className={`message ${msg.role}`}>
-                  <div className="message-content">{msg.content}</div>
-                  <div className="message-time">
-                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                <div key={idx} className={`message ${msg.role}${msg.streaming && !msg.content ? ' loading' : ''}`}>
+                  <div className="message-content">
+                    {msg.streaming && !msg.content ? (
+                      <>
+                        <span className="dot" />
+                        <span className="dot" />
+                        <span className="dot" />
+                      </>
+                    ) : (
+                      <>
+                        {msg.content}
+                        {msg.streaming && <span className="stream-cursor" />}
+                      </>
+                    )}
                   </div>
+                  {!msg.streaming && (
+                    <div className="message-time">
+                      {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  )}
                 </div>
               ))}
-
-              {loading && (
-                <div className="message assistant loading">
-                  <div className="message-content">
-                    <span className="dot" />
-                    <span className="dot" />
-                    <span className="dot" />
-                  </div>
-                </div>
-              )}
               <div ref={messagesEndRef} />
             </div>
 
