@@ -6,7 +6,11 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
 function getUserId() {
   let userId = localStorage.getItem('na_user_id');
   if (!userId) {
-    userId = crypto.randomUUID();
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      userId = crypto.randomUUID();
+    } else {
+      userId = 'user_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
     localStorage.setItem('na_user_id', userId);
   }
   return userId;
