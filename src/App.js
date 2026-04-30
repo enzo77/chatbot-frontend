@@ -87,25 +87,12 @@ function App() {
     }
   };
 
-  const enviarMensaje = async (e) => {
-    e.preventDefault();
-    if (!input.trim() || !currentConversationId || loading) return;
-
-    const userMessage = input;
-    setInput('');
-    setLoading(true);
-
-    setMessages(prev => [
-      ...prev,
-      { role: 'user', content: userMessage, timestamp: new Date().toISOString() },
-      { role: 'assistant', content: '', timestamp: new Date().toISOString(), streaming: true }
-    ]);
-
+  const ejecutarStream = useCallback(async (userMessage, conversationId) => {
     try {
       const res = await fetch(`${API_URL}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage, conversation_id: currentConversationId })
+        body: JSON.stringify({ message: userMessage, conversation_id: conversationId })
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -151,15 +138,43 @@ function App() {
         const updated = [...prev];
         updated[updated.length - 1] = {
           role: 'assistant',
-          content: 'Error al conectar con el servidor',
+          content: 'Hubo un error al conectar. Por favor intentá de nuevo.',
           timestamp: new Date().toISOString(),
           streaming: false
         };
         return updated;
       });
-    } finally {
-      setLoading(false);
     }
+  }, [cargarConversaciones]);
+
+  const enviarMensaje = async (e) => {
+    e.preventDefault();
+    if (!input.trim() || !currentConversationId || loading) return;
+
+    const userMessage = input;
+    setInput('');
+    setLoading(true);
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: userMessage, timestamp: new Date().toISOString() },
+      { role: 'assistant', content: '', timestamp: new Date().toISOString(), streaming: true }
+    ]);
+    await ejecutarStream(userMessage, currentConversationId);
+    setLoading(false);
+  };
+
+  const iniciarConSugerencia = async (texto) => {
+    if (loading) return;
+    const newId = `conv_${Date.now()}`;
+    setCurrentConversationId(newId);
+    setSidebarOpen(false);
+    setLoading(true);
+    setMessages([
+      { role: 'user', content: texto, timestamp: new Date().toISOString() },
+      { role: 'assistant', content: '', timestamp: new Date().toISOString(), streaming: true }
+    ]);
+    await ejecutarStream(texto, newId);
+    setLoading(false);
   };
 
   const eliminarConversacion = async (conversationId, e) => {
@@ -188,7 +203,7 @@ function App() {
       <div className={`sidebar${sidebarOpen ? ' open' : ''}`}>
         <div className="sidebar-header">
           <img src="/logo192.png" alt="Logo" className="sidebar-logo" />
-          <span className="sidebar-brand">NA IA ASISTETNTE</span>
+          <span className="sidebar-brand">NA · Asistente</span>
         </div>
 
         <button className="new-chat-btn" onClick={crearNuevaConversacion}>
@@ -230,10 +245,34 @@ function App() {
 
             <div className="empty-state">
               <img src="/logo192.png" alt="Logo" className="empty-logo" />
-              <h2>Bienvenido al ChANtbot</h2>
-              {/* <p>Tu PADRINO asistente artificial</p> */}
+              <h2>ChANtbot</h2>
+              <p className="empty-subtitle">Tu espacio seguro para conocer el programa de NA</p>
+              <p className="empty-desc">
+                Podés preguntar sobre los 12&nbsp;pasos, las reuniones, cómo funciona el programa,
+                qué es un padrino, o simplemente contarnos cómo te sentís hoy.
+              </p>
+
+              <div className="suggestions">
+                {[
+                  '¿Qué es Narcóticos Anónimos?',
+                  '¿Cómo es una reunión de NA?',
+                  '¿Cuáles son los 12 pasos?',
+                  '¿Qué hace un padrino o madrina?',
+                  '¿Cómo sé si soy adicto/a?',
+                  'Quiero dejar de consumir, ¿por dónde empiezo?',
+                ].map(pregunta => (
+                  <button
+                    key={pregunta}
+                    className="suggestion-chip"
+                    onClick={() => iniciarConSugerencia(pregunta)}
+                  >
+                    {pregunta}
+                  </button>
+                ))}
+              </div>
+
               <button className="empty-hint" onClick={crearNuevaConversacion}>
-                <IconPlus /> Crea una nueva conversación con el Padrino para empezar
+                <IconPlus /> Escribir mi propia pregunta
               </button>
             </div>
           </>
@@ -244,7 +283,7 @@ function App() {
                 <IconMenu />
               </button>
               <span className="topbar-dot" />
-              <span className="topbar-label">IA · en línea</span>
+              <span className="topbar-label">ChANtbot · disponible</span>
             </div>
 
             <div className="messages">
@@ -280,7 +319,7 @@ function App() {
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Escribe tu mensaje..."
+                  placeholder="Preguntá lo que necesitás saber..."
                   disabled={loading}
                   autoFocus
                 />
