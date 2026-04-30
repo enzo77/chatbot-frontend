@@ -3,6 +3,15 @@ import './App.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:5000/api';
 
+function getUserId() {
+  let userId = localStorage.getItem('na_user_id');
+  if (!userId) {
+    userId = crypto.randomUUID();
+    localStorage.setItem('na_user_id', userId);
+  }
+  return userId;
+}
+
 const IconPlus = () => (
   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round">
     <line x1="12" y1="4" x2="12" y2="20" /><line x1="4" y1="12" x2="20" y2="12" />
@@ -55,7 +64,7 @@ function App() {
 
   const cargarConversaciones = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/conversaciones`);
+      const res = await fetch(`${API_URL}/conversaciones?user_id=${getUserId()}`);
       const data = await res.json();
       setConversations(data);
     } catch (error) {
@@ -92,7 +101,7 @@ function App() {
       const res = await fetch(`${API_URL}/chat/stream`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: userMessage, conversation_id: conversationId })
+        body: JSON.stringify({ message: userMessage, conversation_id: conversationId, user_id: getUserId() })
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
