@@ -106,6 +106,39 @@ function App() {
   };
 
   const ejecutarStream = useCallback(async (userMessage, conversationId) => {
+    const finStream = (content) => {
+      setMessages(prev => {
+        const updated = [...prev];
+        updated[updated.length - 1] = {
+          role: 'assistant',
+          content: content ?? 'Hubo un error al conectar. Por favor intentá de nuevo.',
+          timestamp: new Date().toISOString(),
+          streaming: false
+        };
+        return updated;
+      });
+    };
+
+    const usarFallback = async () => {
+      try {
+        const res = await fetch(`${API_URL}/chat`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: userMessage, conversation_id: conversationId, user_id: getUserId() })
+        });
+        const data = await res.json();
+        finStream(data.response);
+        cargarConversaciones();
+      } catch {
+        finStream(null);
+      }
+    };
+
+    // Browsers sin ReadableStream (Android antiguo, WebView) van directo al fallback
+    if (typeof ReadableStream === 'undefined') {
+      return usarFallback();
+    }
+
     try {
       const res = await fetch(`${API_URL}/chat/stream`, {
         method: 'POST',
@@ -114,6 +147,9 @@ function App() {
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      // res.body puede ser null en algunos proxies móviles — fallback
+      if (!res.body) return usarFallback();
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
@@ -150,18 +186,18 @@ function App() {
           } catch { /* chunk malformado */ }
         }
       }
-    } catch (error) {
-      console.error('Error enviando mensaje:', error);
+
+      // Stream cerrado sin evento done (red cortada) — terminar limpiamente
       setMessages(prev => {
         const updated = [...prev];
-        updated[updated.length - 1] = {
-          role: 'assistant',
-          content: 'Hubo un error al conectar. Por favor intentá de nuevo.',
-          timestamp: new Date().toISOString(),
-          streaming: false
-        };
+        const last = updated[updated.length - 1];
+        if (last?.streaming) updated[updated.length - 1] = { ...last, streaming: false };
         return updated;
       });
+
+    } catch (error) {
+      console.error('Error enviando mensaje:', error);
+      finStream(null);
     }
   }, [cargarConversaciones]);
 
